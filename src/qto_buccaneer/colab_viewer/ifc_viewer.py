@@ -138,8 +138,20 @@ def visualize_ifc(
                     print("\n✅ Full visualization! Use the table for selection and the panel for visibility.")
                 
                 return visualizer, hierarchy, ui
-            except ImportError:
-                print("⚠️ ipywidgets not available. Showing 3D view only.")
+            except ImportError as e:
+                print(f"⚠️ ipywidgets not available. Showing 3D view only.")
+                if verbose:
+                    print(f"   Error: {e}")
+                    print("   Install with: !pip install ipywidgets")
+                from IPython.display import display
+                display(visualizer.fig)
+                return visualizer, hierarchy
+            except Exception as e:
+                print(f"⚠️ Error loading UI. Showing 3D view only.")
+                if verbose:
+                    print(f"   Error: {e}")
+                    import traceback
+                    print(traceback.format_exc())
                 from IPython.display import display
                 display(visualizer.fig)
                 return visualizer, hierarchy

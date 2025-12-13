@@ -71,10 +71,12 @@ from .utils.ifc_loader import IfcLoader
 from .utils.qto_calculator import QtoCalculator
 
 # Expose IFC Viewer functionality
-from .colab_viewer import visualize_ifc
+from .colab_viewer import visualize_ifc as visualize_ifc_colab
+from .visualization import visualize_ifc
 
 __all__ = [
     'visualize_ifc',
+    'visualize_ifc_colab',
     'IfcLoader',
     'QtoCalculator'
 ]
