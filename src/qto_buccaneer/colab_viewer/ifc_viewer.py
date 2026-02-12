@@ -140,7 +140,9 @@ def visualize_ifc(
                 if verbose:
                     print("\n✅ Full visualization! Use the table for selection and the panel for visibility.")
                 
-                return visualizer, hierarchy, ui
+                # Don't return anything when displaying UI to avoid output clutter
+                # UI is already displayed above via display()
+                return None
             except ImportError as e:
                 print(f"⚠️ ipywidgets not available. Showing 3D view only.")
                 if verbose:
