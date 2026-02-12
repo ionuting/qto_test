@@ -134,15 +134,11 @@ def visualize_ifc(
                 ui = HierarchicalTableUI(hierarchy, visualizer, model)
                 ui_widget = ui.create_ui()
                 
-                from IPython.display import display
-                display(ui_widget)
-                
                 if verbose:
                     print("\n✅ Full visualization! Use the table for selection and the panel for visibility.")
                 
-                # Don't return anything when displaying UI to avoid output clutter
-                # UI is already displayed above via display()
-                return None
+                # Return the widget directly - Jupyter will display it automatically
+                return ui_widget
             except ImportError as e:
                 print(f"⚠️ ipywidgets not available. Showing 3D view only.")
                 if verbose:
