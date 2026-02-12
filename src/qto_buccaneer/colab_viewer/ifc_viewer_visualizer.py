@@ -1,6 +1,7 @@
 """
 3D Visualization Module for qto_buccaneer Viewer
 Handles creation and configuration of 3D mesh visualizations.
+Uses FigureWidget for interactive click selection in Jupyter/Colab.
 """
 
 import json
@@ -21,12 +22,19 @@ class Visualizer3D:
         geometry_extractor : GeometryExtractor, optional
             Instance of GeometryExtractor with color configuration
         """
-        self.fig = go.Figure()
+        # Use FigureWidget for interactive click events; fallback to Figure
+        try:
+            self.fig = go.FigureWidget()
+            self._is_figure_widget = True
+        except Exception:
+            self.fig = go.Figure()
+            self._is_figure_widget = False
         self.mesh_dict = {}
         self.original_colors = {}
         self.visibility = {}
         self.properties = {}
         self.selected_mesh = [None]
+        self.element_map = {}  # full_name -> IFC element reference
         self.geometry_extractor = geometry_extractor or GeometryExtractor()
 
     def add_mesh_from_element(self, element, mesh_json, hierarchy_path, qto_props):
@@ -92,6 +100,7 @@ class Visualizer3D:
                 self.mesh_dict[full_name] = mesh
                 self.original_colors[full_name] = hex_color
                 self.visibility[full_name] = True
+                self.element_map[full_name] = element  # Store element reference
                 self.properties[full_name] = {
                     "Name": element_name,
                     "Type": element.is_a(),
@@ -102,6 +111,20 @@ class Visualizer3D:
                 }
         except Exception as e:
             print(f"⚠️ Error processing mesh for {element.GlobalId}: {e}")
+
+    def attach_click_handlers(self, callback):
+        """
+        Attach click event handlers to all mesh traces.
+        Only works when using FigureWidget.
+        
+        Parameters:
+        -----------
+        callback : callable
+            Function(trace, points, selector) called on mesh click
+        """
+        if self._is_figure_widget:
+            for trace in self.fig.data:
+                trace.on_click(callback)
 
     def configure_layout(self):
         """Configure the layout of the 3D visualization."""
