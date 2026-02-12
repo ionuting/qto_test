@@ -160,19 +160,45 @@ class HierarchicalTableUI:
         self.editable_props_container.children = [
             widgets.HTML(
                 "<b>📋 Element Properties (Editable):</b><br>"
-                "<i>Click on an element in the 3D view or select from the dropdown to edit its properties</i>"
+                "<i>Select an element from the dropdown or click in the table to edit its properties</i>"
             )
         ]
         
         # Attach 3D click handlers (only works with FigureWidget)
         self.visualizer.attach_click_handlers(self._on_3d_click)
         
+        # Hover selection helper (for Google Colab where click doesn't work well)
+        self.hovered_element_label = widgets.HTML(
+            value="<small>🔍 Hover: <i>Move mouse over 3D model</i></small>",
+            layout=widgets.Layout(margin='5px 0')
+        )
+        self.current_hovered = [None]  # Store current hovered element in a list for closure
+        
+        # Select hovered button
+        select_hovered_btn = widgets.Button(
+            description='Select Hovered →',
+            button_style='info',
+            layout=widgets.Layout(width='140px'),
+            tooltip='Select the element currently under the mouse cursor'
+        )
+        select_hovered_btn.on_click(self._select_hovered_element)
+        
+        # Setup hover observer on FigureWidget
+        self._setup_hover_observer()
+        
+        # Selection helper row
+        selection_helper = widgets.HBox([
+            self.hovered_element_label,
+            select_hovered_btn
+        ], layout=widgets.Layout(align_items='center', margin='5px 0'))
+        
         # Left panel: 3D view, filters, table, visibility
         left_panel = widgets.VBox([
             widgets.HTML("<b>📊 IFC Elements - Filters & 3D View</b>"),
             filter_box,
-            widgets.HTML("<small>💡 Click on an element in the 3D view to select it, or use the dropdown below</small>"),
+            widgets.HTML("<small>💡 <b>Tip:</b> Use dropdown below OR hover over 3D model and click 'Select Hovered'</small>"),
             self.visualizer.fig,  # FigureWidget embedded directly
+            selection_helper,
             widgets.HBox([
                 widgets.HTML("<b>🔍 Select Element:</b> "),
                 self.element_selector
@@ -192,8 +218,53 @@ class HierarchicalTableUI:
         # Initial update
         self._update_table()
         
-        print(f"✅ UI created with 3D click selection, editable properties, and save to IFC")
+        print(f"✅ UI created with filters, table, and dynamic viewer")
+        print(f"🎛️  Single combined filter with AND logic:")
+        print(f"   • Select level → see all types on that level")
+        print(f"   • Select level + type → see ONLY that combination")
+        print(f"   • Filter works with AND logic (both criteria must match)")
         return main_layout
+    
+    def _setup_hover_observer(self):
+        """Setup hover data observer on FigureWidget for element detection."""
+        if not self.visualizer._is_figure_widget:
+            return
+        
+        def on_hover(trace, points, state):
+            """Handle hover events on 3D mesh."""
+            if points.point_inds:
+                full_name = trace.name
+                if full_name in self.visualizer.mesh_dict:
+                    self.current_hovered[0] = full_name
+                    parts = full_name.split('/')
+                    short_name = parts[-1] if parts else full_name
+                    self.hovered_element_label.value = (
+                        f"<small>🔍 Hover: <b style='color:#2196F3'>{short_name}</b> "
+                        f"({parts[1] if len(parts) > 1 else 'Unknown'})</small>"
+                    )
+        
+        # Attach hover handlers to all traces
+        for trace in self.visualizer.fig.data:
+            try:
+                trace.on_hover(on_hover)
+            except Exception:
+                pass  # Some traces may not support hover
+    
+    def _select_hovered_element(self, b):
+        """Select the currently hovered element."""
+        if self.current_hovered[0] and self.current_hovered[0] in self.visualizer.mesh_dict:
+            full_name = self.current_hovered[0]
+            # Update dropdown
+            self.element_selector.unobserve(self._on_element_dropdown_change, names='value')
+            if full_name in list(self.element_selector.options):
+                self.element_selector.value = full_name
+            self.element_selector.observe(self._on_element_dropdown_change, names='value')
+            self._select_mesh(full_name)
+        else:
+            self.hovered_element_label.value = (
+                "<small>🔍 Hover: <i style='color:orange'>No element under cursor. "
+                "Move mouse over a 3D object first.</i></small>"
+            )
 
     # -------------------------------------------------------------------------
     # 3D Click & Element Selection
@@ -834,7 +905,7 @@ class HierarchicalTableUI:
             margin=dict(l=0, r=0, t=20, b=0)
         )
         
-        # Table click handler
+        # Table click handler (may not work in all environments)
         def on_table_click(trace, points, selector):
             if points.point_inds:
                 row_index = points.point_inds[0]
@@ -850,16 +921,121 @@ class HierarchicalTableUI:
                     self.element_selector.observe(self._on_element_dropdown_change, names='value')
                     self._select_mesh(full_name)
         
-        table_fig.data[0].on_click(on_table_click)
+        try:
+            table_fig.data[0].on_click(on_table_click)
+        except Exception:
+            pass  # Click handler may not work in all environments
         
         return table_fig
+    
+    def _create_interactive_element_list(self):
+        """Create an interactive list of elements with selection buttons.
+        
+        This is an alternative to the Plotly table that works better in Google Colab.
+        """
+        items = []
+        
+        for storey_name, types in self.hierarchy.items():
+            if self.filter_storey and self.filter_storey != 'All' and storey_name != self.filter_storey:
+                continue
+            for ifc_type, elements in types.items():
+                if self.filter_ifc_type and self.filter_ifc_type != 'All' and ifc_type != self.filter_ifc_type:
+                    continue
+                for element in elements:
+                    if GeometryExtractor.extract_custom_mesh_from_entity(element):
+                        element_name = element.Name or f"{element.is_a()}_{element.GlobalId[:8]}"
+                        full_name = f"{storey_name}/{ifc_type}/{element_name}"
+                        
+                        if full_name in self.visualizer.mesh_dict:
+                            # Create a select button for this element
+                            btn = widgets.Button(
+                                description='Select',
+                                button_style='',
+                                layout=widgets.Layout(width='70px', height='25px')
+                            )
+                            
+                            # Create closure for the button callback
+                            def make_callback(fn):
+                                def callback(b):
+                                    self.element_selector.unobserve(self._on_element_dropdown_change, names='value')
+                                    if fn in list(self.element_selector.options):
+                                        self.element_selector.value = fn
+                                    self.element_selector.observe(self._on_element_dropdown_change, names='value')
+                                    self._select_mesh(fn)
+                                return callback
+                            
+                            btn.on_click(make_callback(full_name))
+                            
+                            # Create row with element info and button
+                            qto_props = GeometryExtractor.extract_qto_properties(element, self.model)
+                            qto_str = ', '.join([f"{k}: {v:.2f}" if isinstance(v, float) else f"{k}: {v}" 
+                                                for k, v in list(qto_props.items())[:3]])
+                            
+                            row = widgets.HBox([
+                                btn,
+                                widgets.HTML(
+                                    f"<small><b>{element_name}</b> | {ifc_type} | {storey_name}</small>",
+                                    layout=widgets.Layout(width='350px')
+                                ),
+                                widgets.HTML(
+                                    f"<small style='color:#666'>{qto_str[:60]}...</small>" if qto_str else "",
+                                    layout=widgets.Layout(width='200px')
+                                )
+                            ], layout=widgets.Layout(margin='2px 0', padding='3px', 
+                                                    border_bottom='1px solid #eee'))
+                            items.append(row)
+        
+        if not items:
+            return widgets.HTML("<i>No elements match the current filters</i>")
+        
+        # Wrap in scrollable container
+        return widgets.VBox(
+            items,
+            layout=widgets.Layout(
+                max_height='300px',
+                overflow_y='auto',
+                border='1px solid #ddd',
+                padding='5px'
+            )
+        )
 
     def _update_table(self):
-        """Update the table display."""
+        """Update the table display.
+        
+        Uses interactive button list by default (works better in Google Colab)
+        with Plotly table available as alternative.
+        """
         with self.table_output:
             self.table_output.clear_output()
-            table = self._create_table()
-            display(table)
+            
+            # Create toggle for view type
+            use_buttons = widgets.Checkbox(
+                value=True,  # Default to button list (better Colab support)
+                description='Use Button List (Colab-friendly)',
+                indent=False,
+                layout=widgets.Layout(width='250px')
+            )
+            
+            content_container = widgets.Output()
+            
+            def update_view(change):
+                with content_container:
+                    content_container.clear_output()
+                    if use_buttons.value:
+                        display(self._create_interactive_element_list())
+                    else:
+                        display(self._create_table())
+            
+            use_buttons.observe(update_view, names='value')
+            
+            # Show toggle and initial content
+            display(widgets.VBox([
+                use_buttons,
+                content_container
+            ]))
+            
+            # Trigger initial display
+            update_view(None)
 
     def _update_viewer(self):
         """Update the 3D viewer (only needed for non-FigureWidget fallback)."""

@@ -1,0 +1,129 @@
+# Default color configuration for IFC Viewer
+# Defines colors for different IFC element types
+#
+# Format: Each element entry must have:
+#   - filter: "type=IfcXXXX" to specify the IFC type
+#   - color: Hex color code or named color
+#
+# Material-based coloring is supported via PropertySet filters
+
+plots:
+  viewer_default:
+    mode: "3d_view"
+    title: "IFC Model Viewer"
+    description: "Default colors for IFC element visualization"
+    
+    elements:
+      # Walls - Orange tones
+      - name: "Walls"
+        filter: "type=IfcWall"
+        color: "#FF8C00"  # Dark Orange
+        
+      - name: "Standard Walls"
+        filter: "type=IfcWallStandardCase"
+        color: "#FF8C00"  # Dark Orange
+        
+      # Coverings - Light Gray
+      - name: "Coverings"
+        filter: "type=IfcCovering"
+        color: "#D3D3D3"  # Light Gray
+        
+      - name: "External Cladding"
+        filter: "type=IfcCovering AND PredefinedType=CLADDING"
+        color: "#C0C0C0"  # Silver
+        
+      # Windows - Blue
+      - name: "Windows"
+        filter: "type=IfcWindow"
+        color: "#4169E1"  # Royal Blue
+        
+      # Doors - Brown
+      - name: "Doors"
+        filter: "type=IfcDoor"
+        color: "#8B4513"  # Saddle Brown
+        
+      # Concrete Elements - Gray tones
+      - name: "Slabs"
+        filter: "type=IfcSlab"
+        color: "#808080"  # Gray (concrete)
+        
+      - name: "Beams"
+        filter: "type=IfcBeam"
+        color: "#696969"  # Dim Gray (concrete)
+        
+      - name: "Columns"
+        filter: "type=IfcColumn"
+        color: "#778899"  # Light Slate Gray (concrete)
+        
+      - name: "Footings"
+        filter: "type=IfcFooting"
+        color: "#708090"  # Slate Gray (concrete)
+        
+      - name: "Foundations"
+        filter: "type=IfcPile"
+        color: "#5F6A6A"  # Dark Gray (concrete)
+        
+      # Stairs and Railings
+      - name: "Stairs"
+        filter: "type=IfcStair"
+        color: "#A9A9A9"  # Dark Gray
+        
+      - name: "Stair Flights"
+        filter: "type=IfcStairFlight"
+        color: "#A9A9A9"  # Dark Gray
+        
+      - name: "Railings"
+        filter: "type=IfcRailing"
+        color: "#2F4F4F"  # Dark Slate Gray
+        
+      # Roofs
+      - name: "Roofs"
+        filter: "type=IfcRoof"
+        color: "#8B0000"  # Dark Red (roof tiles)
+        
+      # Spaces
+      - name: "Spaces"
+        filter: "type=IfcSpace"
+        color: "#F5F5F5"  # White Smoke (transparent)
+        
+      # Building Elements
+      - name: "Building Element Proxy"
+        filter: "type=IfcBuildingElementProxy"
+        color: "#ADD8E6"  # Light Blue
+        
+      # Curtain Walls (glass)
+      - name: "Curtain Walls"
+        filter: "type=IfcCurtainWall"
+        color: "#87CEEB"  # Sky Blue (glass)
+        
+      - name: "Plates"
+        filter: "type=IfcPlate"
+        color: "#B0C4DE"  # Light Steel Blue
+        
+      # Members (structural)
+      - name: "Members"
+        filter: "type=IfcMember"
+        color: "#708090"  # Slate Gray
+
+# Color palette reference:
+# 
+# Concrete colors:
+#   - #808080 (Gray) - standard concrete
+#   - #696969 (Dim Gray) - darker concrete  
+#   - #778899 (Light Slate Gray) - polished concrete
+#   - #708090 (Slate Gray) - exposed concrete
+#   - #5F6A6A (Dark Gray) - foundation concrete
+#
+# Metal colors:
+#   - #C0C0C0 (Silver) - steel
+#   - #B0C4DE (Light Steel Blue) - metal panels
+#
+# Wood colors:
+#   - #8B4513 (Saddle Brown) - dark wood
+#   - #D2691E (Chocolate) - medium wood
+#   - #DEB887 (Burly Wood) - light wood
+#
+# Glass colors:
+#   - #4169E1 (Royal Blue) - tinted glass
+#   - #87CEEB (Sky Blue) - clear glass
+#   - #ADD8E6 (Light Blue) - frosted glass

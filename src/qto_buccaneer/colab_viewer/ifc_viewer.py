@@ -67,11 +67,14 @@ def visualize_ifc(
     try:
         # Determine color config path
         if color_config_path is None:
-            # Use default config from package
+            # Use default config from package (colab_viewer/configs/)
             package_dir = Path(__file__).parent
-            color_config_path = package_dir / "configs" / "abstractBIM_plots_config.yaml"
+            color_config_path = package_dir / "configs" / "default_colors.yaml"
             if not color_config_path.exists():
-                color_config_path = None
+                # Fallback to main configs folder
+                color_config_path = package_dir.parent / "configs" / "abstractBIM_plots_config.yaml"
+                if not color_config_path.exists():
+                    color_config_path = None
         
         if verbose:
             print(f"🚀 Starting IFC file processing...")
